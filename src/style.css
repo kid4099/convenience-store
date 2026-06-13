@@ -92,6 +92,10 @@ body {
   font-weight: 800;
   font-size: 20px;
 }
+.topactions {
+  display: flex;
+  gap: 8px;
+}
 .btn-mini-ghost {
   border: 1px solid var(--line);
   background: #f6f9f7;

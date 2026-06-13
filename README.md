@@ -1,6 +1,14 @@
-# 便利商店經營模擬（MVP）
+# 便利商店經營模擬
 
-Vite + TypeScript + Phaser 3 的網頁經營模擬遊戲。目標：在 30 個遊戲天內把資金從 $50,000 滾到 $150,000。
+Vite + TypeScript + Phaser 3 的網頁經營模擬遊戲。目標：在 30 個遊戲天內把資金從 $45,000 滾到 $150,000。
+
+## 🎮 線上試玩
+
+**👉 https://kid4099.github.io/convenience-store/**
+
+手機、電腦瀏覽器皆可直接遊玩。
+
+[![便利商店經營模擬](https://kid4099.github.io/convenience-store/og.png)](https://kid4099.github.io/convenience-store/)
 
 ## 啟動
 

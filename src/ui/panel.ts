@@ -324,7 +324,14 @@ export function createPanel(root: HTMLElement, getState: () => GameState, cb: Pa
       <header class="topbar card">
         <div class="topline">
           <div class="brand">🏪 ${escapeHtml(s.storeName || '便利商店')}<span class="brand-sub">經營模擬</span></div>
-          ${canRestart ? '<button class="btn-mini-ghost" id="btn-newgame">🔄 重新開始</button>' : ''}
+          ${
+            s.storeName
+              ? `<div class="topactions">
+                   <button class="btn-mini-ghost" id="btn-share">🔗 分享</button>
+                   ${canRestart ? '<button class="btn-mini-ghost" id="btn-newgame">🔄 重新開始</button>' : ''}
+                 </div>`
+              : ''
+          }
         </div>
         <div class="stats">
           <div class="stat"><span>天數</span><b>${s.day} / ${CONFIG.TOTAL_DAYS}</b></div>
@@ -437,6 +444,23 @@ export function createPanel(root: HTMLElement, getState: () => GameState, cb: Pa
     root.querySelector('#btn-resume-new')?.addEventListener('click', () => cb.onNewGame());
     root.querySelector('#btn-newgame')?.addEventListener('click', () => {
       if (window.confirm('確定要放棄目前進度，重新開店嗎？')) cb.onNewGame();
+    });
+
+    // 分享：手機開原生分享、電腦複製連結
+    root.querySelector('#btn-share')?.addEventListener('click', async () => {
+      const url = location.hostname.endsWith('github.io')
+        ? location.origin + location.pathname
+        : 'https://kid4099.github.io/convenience-store/';
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: '便利商店經營模擬', text: '來玩我的便利商店！', url });
+        } else {
+          await navigator.clipboard.writeText(url);
+          flash('已複製分享連結！貼給朋友吧 📋');
+        }
+      } catch {
+        flash(`分享連結：${url}`);
+      }
     });
 
     // 英雄榜登錄
