@@ -187,6 +187,18 @@ body {
 .btn.ghost:hover {
   background: #e0ece3;
 }
+.btn.suggest {
+  background: #f59f00;
+  color: #fff;
+  flex: 1;
+  font-size: 16px;
+  padding: 14px;
+  box-shadow: 0 4px 14px rgba(245, 159, 0, 0.35);
+}
+.btn.suggest:hover {
+  background: #e8890c;
+  box-shadow: 0 6px 18px rgba(245, 159, 0, 0.45);
+}
 .btn.mini {
   background: var(--green);
   color: #fff;
@@ -223,6 +235,32 @@ body {
   text-align: left;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* 手機：隱藏次要欄位，讓表格不用橫向捲動、商品名永遠看得到 */
+@media (max-width: 700px) {
+  .grid th:nth-child(2),
+  .grid td:nth-child(2), /* 進價 */
+  .grid th:nth-child(6),
+  .grid td:nth-child(6), /* 昨日售出 */
+  .grid th:nth-child(7),
+  .grid td:nth-child(7) {
+    /* 缺貨 */
+    display: none;
+  }
+  .grid th,
+  .grid td {
+    padding: 7px 5px;
+  }
+  .grid td.name {
+    font-size: 13px;
+  }
+  .price {
+    width: 54px;
+  }
+  .restock .qty {
+    width: 62px;
+  }
 }
 .grid tr:last-child td {
   border-bottom: none;
@@ -580,6 +618,33 @@ td.bad {
 }
 .stars .off {
   color: #cfd6d1;
+}
+
+/* 口碑說明卡 */
+.rep-help {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.rep-help h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+.rep-help ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.rep-help li {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.rep-help li b {
+  color: var(--text);
 }
 
 /* 聯動組合學習卡 */

@@ -113,7 +113,7 @@ export function createPanel(root: HTMLElement, getState: () => GameState, cb: Pa
             <td class="name">${p.emoji} ${p.name}${p.perishable ? '<span class="tag">生鮮</span>' : ''}</td>
             <td>${money(p.costPrice)}</td>
             <td>
-              <input class="price" data-id="${p.id}" type="number" min="0" value="${p.salePrice}" />
+              <input class="price" data-id="${p.id}" type="number" inputmode="numeric" pattern="[0-9]*" min="0" value="${p.salePrice}" />
               <div class="factor ${fClass}">需求 ×${f.toFixed(2)}</div>
             </td>
             <td class="${p.stock === 0 ? 'bad' : ''}">${p.stock}</td>
@@ -121,7 +121,7 @@ export function createPanel(root: HTMLElement, getState: () => GameState, cb: Pa
             <td>${p.soldToday}</td>
             <td class="${p.lostSalesToday > 0 ? 'bad' : ''}">${p.lostSalesToday}</td>
             <td class="restock">
-              <input class="qty" data-id="${p.id}" type="number" min="0" placeholder="數量 ↵" />
+              <input class="qty" data-id="${p.id}" type="number" inputmode="numeric" pattern="[0-9]*" min="0" placeholder="數量 ↵" />
             </td>
           </tr>`;
       })
@@ -350,7 +350,7 @@ export function createPanel(root: HTMLElement, getState: () => GameState, cb: Pa
         <div class="col-main">
           ${banner}
           <div class="actions">
-            <button class="btn ghost" id="btn-suggest">🧮 建議補貨（全部）</button>
+            <button class="btn suggest" id="btn-suggest">🧮 一鍵建議補貨</button>
             <button class="btn primary" id="btn-day" ${s.status !== 'playing' ? 'disabled' : ''}>▶️ 營業一天</button>
           </div>
           <div class="table-wrap card">
@@ -367,6 +367,14 @@ export function createPanel(root: HTMLElement, getState: () => GameState, cb: Pa
         </div>
         <div class="col-side">
           ${legend}
+          <div class="rep-help card">
+            <h3>⭐ 口碑怎麼運作</h3>
+            <ul>
+              <li>⭐ 口碑越高 → <b>來店人潮越多</b>（0★ 來客 ×0.7、滿星 ×1.3），所有商品都跟著更好賣。</li>
+              <li>🟢 想加星：每天<b>少缺貨</b>（東西備夠）＋<b>價格公道</b>（多數商品別超過建議價）。</li>
+              <li>🔴 會掉星：<b>常常缺貨</b>，或把售價<b>亂拉高</b>。</li>
+            </ul>
+          </div>
           <div class="combos card">
             <h3>🔗 聯動組合 <span class="combo-sub">買 A 帶動 B</span></h3>
             <div class="combo-list">
