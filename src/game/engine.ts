@@ -11,6 +11,7 @@ function computeTips(
   netChange: number,
   comboRevenue: number,
   revenue: number,
+  comboStats: { name: string; emoji: string; units: number; rev: number }[],
 ): string[] {
   const tips: string[] = [];
 
@@ -36,12 +37,16 @@ function computeTips(
 
   // 聯動組合（套餐加成）當日成效概況
   if (revenue > 0) {
-    const share = Math.round((comboRevenue / revenue) * 100);
-    tips.push(
-      comboRevenue > 0
-        ? `🔗 連帶銷售 +${money(comboRevenue)}（佔營收 ${share}%）${share >= 10 ? '，套餐帶動很讚！' : ''}`
-        : '🔗 今天沒連帶銷售：把飲料、茶葉蛋等「帶動品」備足，便當/泡麵就能帶動加賣。',
-    );
+    if (comboRevenue > 0) {
+      const share = Math.round((comboRevenue / revenue) * 100);
+      const top = [...comboStats].sort((a, b) => b.units - a.units)[0];
+      tips.push(`🔗 連帶銷售 +${money(comboRevenue)}（佔營收 ${share}%）`);
+      if (top && top.units > 0) {
+        tips.push(`🏆 最受歡迎套餐：${top.emoji} ${top.name} — 帶動 ${top.units} 件、+${money(top.rev)}`);
+      }
+    } else {
+      tips.push('🔗 今天沒連帶銷售：把飲料、茶葉蛋等「帶動品」備足，便當/泡麵就能帶動加賣。');
+    }
   }
   return tips;
 }
@@ -219,6 +224,12 @@ export function simulateDay(state: GameState): DayReport {
   let revenue = 0;
   let lostRevenue = 0;
   let comboRevenue = 0;
+  const comboUnits: Record<string, number> = {};
+  const comboRev: Record<string, number> = {};
+  for (const cmb of COMBOS) {
+    comboUnits[cmb.id] = 0;
+    comboRev[cmb.id] = 0;
+  }
   for (let c = 0; c < customers; c++) {
     const r = Math.random();
     let si = 0;
@@ -233,7 +244,7 @@ export function simulateDay(state: GameState): DayReport {
 
     // 第一輪：基礎購買意願
     const want = new Array<boolean>(n).fill(false);
-    const fromCombo = new Array<boolean>(n).fill(false);
+    const comboBy = new Array<string | null>(n).fill(null);
     for (let i = 0; i < n; i++) {
       if (Math.random() < baseProb(i)) want[i] = true;
     }
@@ -250,7 +261,7 @@ export function simulateDay(state: GameState): DayReport {
         if (ti === undefined || want[ti]) continue;
         if (Math.random() < baseProb(ti) * (combo.mult - 1)) {
           want[ti] = true;
-          fromCombo[ti] = true;
+          comboBy[ti] = combo.id;
         }
       }
     }
@@ -263,7 +274,12 @@ export function simulateDay(state: GameState): DayReport {
         p.stock -= 1;
         p.soldToday += 1;
         revenue += p.salePrice;
-        if (fromCombo[i]) comboRevenue += p.salePrice;
+        const by = comboBy[i];
+        if (by) {
+          comboRevenue += p.salePrice;
+          comboUnits[by] += 1;
+          comboRev[by] += p.salePrice;
+        }
       } else {
         p.lostSalesToday += 1;
         lostRevenue += p.salePrice;
@@ -336,6 +352,13 @@ export function simulateDay(state: GameState): DayReport {
     revenue: p.soldToday * p.salePrice,
   }));
 
+  const comboStats = COMBOS.map((cmb) => ({
+    name: cmb.name,
+    emoji: cmb.emoji,
+    units: comboUnits[cmb.id],
+    rev: comboRev[cmb.id],
+  }));
+
   const report: DayReport = {
     day: state.day,
     weekday: weekday.name,
@@ -354,7 +377,7 @@ export function simulateDay(state: GameState): DayReport {
     missionDone,
     missionReward,
     lossRate: revenue > 0 ? (spoilageCost + lostRevenue) / revenue : spoilageCost + lostRevenue > 0 ? 1 : 0,
-    tips: computeTips(lines, spoilageUnits, spoilageCost, grossProfit + missionReward, comboRevenue, revenue),
+    tips: computeTips(lines, spoilageUnits, spoilageCost, grossProfit + missionReward, comboRevenue, revenue, comboStats),
     comboRevenue,
     segments,
     lines,

@@ -46,13 +46,13 @@ npm run preview  # 預覽打包結果
 | `START_CASH` | 45000 | 起始資金 |
 | `GOAL_CASH` | 150000 | 勝利門檻 |
 | `TOTAL_DAYS` | 30 | 天數上限 |
-| `DAILY_FIXED_COST` | 4500 | 每日租金＋水電 |
+| `DAILY_FIXED_COST` | 4000 | 每日租金＋水電 |
 | `BASE_CUSTOMERS` | 120 | 基準來客數 |
 | `BASKET_SCALE` | 0.45 | 每位顧客平均購買件數 |
 | `ELASTICITY_UP` | 1.4 | 漲價的需求衰減 |
 | `ELASTICITY_DOWN` | 0.4 | 降價的需求提升 |
 
-> 數值經模擬校準（`npm run balance`）：高手按「建議補貨」100% 過關（約第 17 天），粗心約 63%，亂囤貨必敗，且為軟性失敗（時間到未達標、零破產）。
+> 數值經模擬校準（`npm run balance`，對 8 歲友善）：高手按「建議補貨」100% 過關（約第 14 天），粗心約 89%，亂囤貨必敗，且為軟性失敗（時間到未達標、零破產）。
 
 ## 數值平衡工具
 

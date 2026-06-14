@@ -5,7 +5,7 @@ export const CONFIG = {
   START_CASH: 45000,       // 起始資金（數值平衡校準）
   GOAL_CASH: 150000,       // 勝利門檻
   TOTAL_DAYS: 30,          // 經營天數上限
-  DAILY_FIXED_COST: 5500,  // 每日固定成本（租金＋水電）— 校準含聯動後的難度
+  DAILY_FIXED_COST: 4000,  // 每日固定成本（租金＋水電）— 對小朋友友善的校準值
   BASE_CUSTOMERS: 120,     // 基準來客數（平日基準，乘上星期／事件倍率）
   CUSTOMER_VARIANCE: 0.15, // 來客數隨機波動 ±15%
   BASKET_SCALE: 0.45,      // 購物籃係數：控制每位顧客平均購買件數
