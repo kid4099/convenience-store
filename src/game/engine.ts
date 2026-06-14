@@ -4,7 +4,14 @@ import { money } from './format';
 import type { DailyMission, DayReport, GameEvent, GameState, Product, ProductDayLine, SegmentCount, WeekdayProfile } from './types';
 
 /** 由結算數據產生經營提醒（在引擎算一次，存進報告，免每次重繪重算）。 */
-function computeTips(lines: ProductDayLine[], spoilageUnits: number, spoilageCost: number, netChange: number): string[] {
+function computeTips(
+  lines: ProductDayLine[],
+  spoilageUnits: number,
+  spoilageCost: number,
+  netChange: number,
+  comboRevenue: number,
+  revenue: number,
+): string[] {
   const tips: string[] = [];
 
   const stockouts = lines.filter((l) => l.lost >= 5).sort((a, b) => b.lost - a.lost);
@@ -26,6 +33,16 @@ function computeTips(lines: ProductDayLine[], spoilageUnits: number, spoilageCos
   }
 
   if (!tips.length) tips.push('🟢 供需平衡、無明顯缺貨或報廢，表現穩定。');
+
+  // 聯動組合（套餐加成）當日成效概況
+  if (revenue > 0) {
+    const share = Math.round((comboRevenue / revenue) * 100);
+    tips.push(
+      comboRevenue > 0
+        ? `🔗 連帶銷售 +${money(comboRevenue)}（佔營收 ${share}%）${share >= 10 ? '，套餐帶動很讚！' : ''}`
+        : '🔗 今天沒連帶銷售：把飲料、茶葉蛋等「帶動品」備足，便當/泡麵就能帶動加賣。',
+    );
+  }
   return tips;
 }
 
@@ -337,7 +354,7 @@ export function simulateDay(state: GameState): DayReport {
     missionDone,
     missionReward,
     lossRate: revenue > 0 ? (spoilageCost + lostRevenue) / revenue : spoilageCost + lostRevenue > 0 ? 1 : 0,
-    tips: computeTips(lines, spoilageUnits, spoilageCost, grossProfit + missionReward),
+    tips: computeTips(lines, spoilageUnits, spoilageCost, grossProfit + missionReward, comboRevenue, revenue),
     comboRevenue,
     segments,
     lines,

@@ -421,6 +421,12 @@ export function createPanel(root: HTMLElement, getState: () => GameState, cb: Pa
     });
     const qtyInputs = Array.from(root.querySelectorAll<HTMLInputElement>('input.qty'));
     qtyInputs.forEach((inp, idx) => {
+      // 離開欄位即進貨（手機按「完成」或點別處、電腦失焦都算）
+      inp.addEventListener('change', () => {
+        const v = Number(inp.value || 0);
+        if (v > 0) cb.onRestock(inp.dataset.id!, v);
+      });
+      // 電腦：按 Enter 進貨並跳到下一欄
       inp.addEventListener('keydown', (e) => {
         if (e.key !== 'Enter') return;
         e.preventDefault();
