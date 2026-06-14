@@ -21,5 +21,6 @@ export function createInitialState(): GameState {
     history: [],
     todayEvent: null, // 第 1 天無事件，給玩家暖身
     todayMission: rollMission(), // 第 1 天就有任務
+    todayMarketing: null, // 預設不做行銷
   };
 }

@@ -1,5 +1,5 @@
 // 所有可調數值集中於此，方便數值平衡時調整
-import type { Combo, GameEvent, Product, Segment, WeekdayProfile } from './types';
+import type { Combo, GameEvent, Marketing, Product, Segment, WeekdayProfile } from './types';
 
 export const CONFIG = {
   START_CASH: 45000,       // 起始資金（數值平衡校準）
@@ -118,4 +118,12 @@ export const COMBOS: Combo[] = [
   { id: 'oden-platter', name: '關東煮拼盤',   emoji: '🍢', anchors: ['radish', 'fishcake', 'corn', 'riceblood'], targets: ['radish', 'fishcake', 'corn', 'riceblood'], mult: 1.6, hint: '夾一樣關東煮 → 想多夾幾樣' },
   { id: 'snack-drink',  name: '追劇零食組',   emoji: '🥔', anchors: ['chips', 'jelly'], targets: ['water', 'tea', 'coffee'], mult: 1.3, hint: '吃零食 → 想配飲料' },
   { id: 'breakfast',    name: '早餐組',       emoji: '☕', anchors: ['coffee'], targets: ['riceball'], mult: 1.5, hint: '買咖啡 → 配個飯糰' },
+];
+
+// 行銷活動：玩家每天自選一個（當天生效，費用結算扣）。用錯時機或庫存不足就會虧本。
+export const MARKETINGS: Marketing[] = [
+  { id: 'flyer',    name: '發傳單',   emoji: '📣', cost: 1500, desc: '更多人來逛', trafficMul: 1.3 },
+  { id: 'sampling', name: '試吃試喝', emoji: '🍢', cost: 1200, desc: '鮮食飲料更好賣', categoryMul: { food: 1.5, drink: 1.5 } },
+  { id: 'social',   name: '社群發文', emoji: '📱', cost: 800,  desc: '年輕人來＋口碑', reputationBonus: 6, segmentBias: { student: 1.4, tourist: 1.4 } },
+  { id: 'gift',     name: '買就送',   emoji: '🎁', cost: 1000, desc: '連帶多賣一點', comboBonus: 0.6 },
 ];

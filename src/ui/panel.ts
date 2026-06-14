@@ -1,4 +1,4 @@
-import { CATEGORY_LABEL, COMBOS, CONFIG, SEGMENTS } from '../game/config';
+import { CATEGORY_LABEL, COMBOS, CONFIG, MARKETINGS, SEGMENTS } from '../game/config';
 import { expectedDemand, getWeekday, priceFactor } from '../game/engine';
 import { money } from '../game/format';
 import { addScore, loadBoard, type Score } from '../game/leaderboard';
@@ -6,6 +6,7 @@ import type { DayReport, GameState, Segment } from '../game/types';
 
 export interface PanelCallbacks {
   onSetStoreName(name: string): void;
+  onSetMarketing(id: string | null): void;
   onSetPrice(id: string, price: number): void;
   onRestock(id: string, qty: number): void;
   onSuggestAll(): void;
@@ -186,6 +187,11 @@ export function createPanel(root: HTMLElement, getState: () => GameState, cb: Pa
               ? `<div class="mission-result ${last.missionDone ? 'done' : 'fail'}">🎯 任務「${last.missionText}」：${last.missionDone ? `✅ 達成 +${money(last.missionReward)}` : '❌ 未達成'}</div>`
               : ''
           }
+          ${
+            last.marketingName
+              ? `<div class="mk-result">📢 今日行銷：${last.marketingName}（花費 -${money(last.marketingCost)}）— 比比看今天淨利有沒有變多！</div>`
+              : ''
+          }
           <div class="seg-breakdown">
             ${last.segments
               .map(
@@ -349,6 +355,16 @@ export function createPanel(root: HTMLElement, getState: () => GameState, cb: Pa
       <div class="dash">
         <div class="col-main">
           ${banner}
+          <div class="marketing card">
+            <h4>📢 今日行銷（選一個，當天有效；用對才划算）</h4>
+            <div class="mk-list">
+              <button class="mk-item ${!s.todayMarketing ? 'on' : ''}" data-mk="">🚫 不做行銷<small>免費</small></button>
+              ${MARKETINGS.map(
+                (m) =>
+                  `<button class="mk-item ${s.todayMarketing === m.id ? 'on' : ''}" data-mk="${m.id}">${m.emoji} ${m.name}<small>${m.desc}・${money(m.cost)}</small></button>`,
+              ).join('')}
+            </div>
+          </div>
           <div class="actions">
             <button class="btn suggest" id="btn-suggest">🧮 一鍵建議補貨</button>
             <button class="btn primary" id="btn-day" ${s.status !== 'playing' ? 'disabled' : ''}>▶️ 營業一天</button>
@@ -440,6 +456,11 @@ export function createPanel(root: HTMLElement, getState: () => GameState, cb: Pa
   function bindControls() {
     root.querySelector('#btn-suggest')?.addEventListener('click', () => cb.onSuggestAll());
     root.querySelector('#btn-day')?.addEventListener('click', () => cb.onSimulate());
+
+    // 今日行銷選擇
+    root.querySelectorAll<HTMLButtonElement>('button.mk-item').forEach((btn) => {
+      btn.addEventListener('click', () => cb.onSetMarketing(btn.dataset.mk || null));
+    });
 
     const startGame = () => {
       const inp = root.querySelector<HTMLInputElement>('#store-name');

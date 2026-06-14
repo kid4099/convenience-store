@@ -48,6 +48,20 @@ export interface Combo {
   hint: string; // 小朋友懂的說法
 }
 
+/** 行銷活動（玩家每天自選一個，當天生效）。 */
+export interface Marketing {
+  id: string;
+  name: string;
+  emoji: string;
+  cost: number;
+  desc: string; // 小朋友懂的說法
+  trafficMul?: number;
+  categoryMul?: Partial<Record<Category, number>>;
+  segmentBias?: Partial<Record<string, number>>;
+  reputationBonus?: number;
+  comboBonus?: number; // 額外加到每組聯動的帶動機率
+}
+
 /** 每日小任務：達成給現金獎勵。 */
 export interface DailyMission {
   type: 'category' | 'customers' | 'profit' | 'product';
@@ -105,6 +119,8 @@ export interface DayReport {
   lossRate: number;        // 損耗率 =(報廢+缺貨流失)/營業額（預算，免重算）
   tips: string[];          // 經營提醒（預算，免重算）
   comboRevenue: number;    // 連帶銷售（聯動帶動的營收）
+  marketingName: string | null; // 當日行銷活動名稱
+  marketingCost: number;        // 當日行銷花費
   segments: SegmentCount[];
   lines: ProductDayLine[];
 }
@@ -119,4 +135,5 @@ export interface GameState {
   history: DayReport[];
   todayEvent: GameEvent | null;      // 今天（即將營業的這天）的事件
   todayMission: DailyMission | null; // 今天的小任務
+  todayMarketing: string | null;     // 今天選的行銷活動 id（null = 不做）
 }

@@ -52,6 +52,11 @@ const panel = createPanel(panelRoot, () => state, {
     state.storeName = name;
     refresh();
   },
+  onSetMarketing(id) {
+    if (state.status !== 'playing') return;
+    state.todayMarketing = id;
+    refresh();
+  },
   onSetPrice(id, price) {
     const p = state.products.find((x) => x.id === id);
     if (p) p.salePrice = Math.max(0, Math.round(price));

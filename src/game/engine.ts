@@ -1,7 +1,13 @@
 // 核心模擬引擎：星期、事件、口碑、任務、聯動、顧客類型、價格彈性、單日結算
-import { COMBO_TRIGGER_RATE, COMBOS, CONFIG, EVENTS, PRODUCT_TEMPLATES, SEGMENTS, WEEKDAYS } from './config';
+import { COMBO_TRIGGER_RATE, COMBOS, CONFIG, EVENTS, MARKETINGS, PRODUCT_TEMPLATES, SEGMENTS, WEEKDAYS } from './config';
 import { money } from './format';
-import type { DailyMission, DayReport, GameEvent, GameState, Product, ProductDayLine, SegmentCount, WeekdayProfile } from './types';
+import type { DailyMission, DayReport, GameEvent, GameState, Marketing, Product, ProductDayLine, SegmentCount, WeekdayProfile } from './types';
+
+/** 取得當天選定的行銷活動（null = 不做）。 */
+export function getMarketing(state: GameState): Marketing | null {
+  if (!state.todayMarketing) return null;
+  return MARKETINGS.find((m) => m.id === state.todayMarketing) ?? null;
+}
 
 /** 由結算數據產生經營提醒（在引擎算一次，存進報告，免每次重繪重算）。 */
 function computeTips(
@@ -104,10 +110,11 @@ function reputationFactor(rep: number): number {
 function segDistribution(state: GameState): Record<string, number> {
   const weekday = getWeekday(state.day);
   const bias = state.todayEvent?.segmentBias ?? {};
+  const mkBias = getMarketing(state)?.segmentBias ?? {};
   const raw: Record<string, number> = {};
   let sum = 0;
   for (const seg of SEGMENTS) {
-    const w = (weekday.segmentWeights[seg.id] ?? 0) * (bias[seg.id] ?? 1);
+    const w = (weekday.segmentWeights[seg.id] ?? 0) * (bias[seg.id] ?? 1) * (mkBias[seg.id] ?? 1);
     raw[seg.id] = w;
     sum += w;
   }
@@ -126,6 +133,7 @@ function effectiveBaseCustomers(state: GameState): number {
     CONFIG.BASE_CUSTOMERS *
     weekday.trafficMul *
     (state.todayEvent?.trafficMul ?? 1) *
+    (getMarketing(state)?.trafficMul ?? 1) *
     reputationFactor(state.reputation)
   );
 }
@@ -146,22 +154,25 @@ export function priceFactor(p: Product): number {
 }
 
 /** 商品作為「帶動品」時的預期需求加成（給建議補貨預估聯動需求用）。 */
-function comboUpliftFactor(productId: string): number {
+function comboUpliftFactor(productId: string, comboBonus = 0): number {
   let f = 1;
-  for (const c of COMBOS) if (c.targets.includes(productId)) f += COMBO_TRIGGER_RATE * (c.mult - 1);
+  for (const c of COMBOS) if (c.targets.includes(productId)) f += COMBO_TRIGGER_RATE * (c.mult - 1 + comboBonus);
   return f;
 }
 
-/** 估算當天某商品的預期銷量（已考慮星期、事件、客群、價格、聯動）。 */
+/** 估算當天某商品的預期銷量（已考慮星期、事件、客群、價格、聯動、行銷）。 */
 export function expectedDemand(state: GameState, p: Product): number {
   const base = effectiveBaseCustomers(state);
   const dist = segDistribution(state);
+  const mk = getMarketing(state);
   let segPref = 0;
   for (const seg of SEGMENTS) {
     segPref += dist[seg.id] * (seg.prefs[p.category] ?? 1);
   }
-  const evMul = state.todayEvent?.categoryMul[p.category] ?? 1;
-  return Math.round(base * p.demandWeight * segPref * priceFactor(p) * CONFIG.BASKET_SCALE * evMul * comboUpliftFactor(p.id));
+  const evMul = (state.todayEvent?.categoryMul[p.category] ?? 1) * (mk?.categoryMul?.[p.category] ?? 1);
+  return Math.round(
+    base * p.demandWeight * segPref * priceFactor(p) * CONFIG.BASKET_SCALE * evMul * comboUpliftFactor(p.id, mk?.comboBonus ?? 0),
+  );
 }
 
 /** 進貨：扣現金、加庫存。現金不足則拒絕。 */
@@ -196,6 +207,7 @@ export function suggestRestockAll(state: GameState): void {
 export function simulateDay(state: GameState): DayReport {
   const weekday = getWeekday(state.day);
   const ev = state.todayEvent;
+  const mk = getMarketing(state);
   const dist = segDistribution(state);
 
   const variance = 1 + (Math.random() * 2 - 1) * CONFIG.CUSTOMER_VARIANCE;
@@ -219,7 +231,7 @@ export function simulateDay(state: GameState): DayReport {
 
   const n = state.products.length;
   const idIndex = new Map(state.products.map((p, i) => [p.id, i]));
-  const evMulOf = (cat: Product['category']) => ev?.categoryMul[cat] ?? 1;
+  const catMul = (cat: Product['category']) => (ev?.categoryMul[cat] ?? 1) * (mk?.categoryMul?.[cat] ?? 1);
 
   let revenue = 0;
   let lostRevenue = 0;
@@ -239,7 +251,7 @@ export function simulateDay(state: GameState): DayReport {
 
     const baseProb = (i: number) => {
       const p = state.products[i];
-      return p.demandWeight * (seg.prefs[p.category] ?? 1) * factors[i] * CONFIG.BASKET_SCALE * evMulOf(p.category);
+      return p.demandWeight * (seg.prefs[p.category] ?? 1) * factors[i] * CONFIG.BASKET_SCALE * catMul(p.category);
     };
 
     // 第一輪：基礎購買意願
@@ -259,7 +271,7 @@ export function simulateDay(state: GameState): DayReport {
       for (const tid of combo.targets) {
         const ti = idIndex.get(tid);
         if (ti === undefined || want[ti]) continue;
-        if (Math.random() < baseProb(ti) * (combo.mult - 1)) {
+        if (Math.random() < baseProb(ti) * (combo.mult - 1 + (mk?.comboBonus ?? 0))) {
           want[ti] = true;
           comboBy[ti] = combo.id;
         }
@@ -290,6 +302,8 @@ export function simulateDay(state: GameState): DayReport {
   // 結算現金
   state.cash += revenue;
   state.cash -= CONFIG.DAILY_FIXED_COST;
+  const marketingCost = mk?.cost ?? 0;
+  state.cash -= marketingCost;
 
   // 生鮮報廢（逐項記錄）
   const spoiledMap: Record<string, number> = {};
@@ -331,6 +345,7 @@ export function simulateDay(state: GameState): DayReport {
   if (gouging >= 3) repDelta -= 3;
   else if (gouging >= 1) repDelta -= 1;
   if (state.products.filter((p) => p.salePrice <= p.basePrice).length >= 8) repDelta += 1;
+  repDelta += mk?.reputationBonus ?? 0; // 社群發文等行銷加口碑
   const prevRep = state.reputation;
   state.reputation = Math.max(0, Math.min(100, prevRep + repDelta));
   const reputationDelta = state.reputation - prevRep;
@@ -370,15 +385,17 @@ export function simulateDay(state: GameState): DayReport {
     spoilageUnits,
     spoilageCost,
     lostRevenue,
-    netChange: grossProfit + missionReward,
+    netChange: grossProfit + missionReward - marketingCost,
     cashAfter: state.cash,
     reputationDelta,
     missionText: mission?.text ?? '',
     missionDone,
     missionReward,
     lossRate: revenue > 0 ? (spoilageCost + lostRevenue) / revenue : spoilageCost + lostRevenue > 0 ? 1 : 0,
-    tips: computeTips(lines, spoilageUnits, spoilageCost, grossProfit + missionReward, comboRevenue, revenue, comboStats),
+    tips: computeTips(lines, spoilageUnits, spoilageCost, grossProfit + missionReward - marketingCost, comboRevenue, revenue, comboStats),
     comboRevenue,
+    marketingName: mk?.name ?? null,
+    marketingCost,
     segments,
     lines,
   };
@@ -395,6 +412,7 @@ export function simulateDay(state: GameState): DayReport {
     state.day += 1;
     state.todayEvent = rollEvent(); // 抽下一天的事件（營業前公告）
     state.todayMission = rollMission(); // 抽下一天的任務
+    state.todayMarketing = null; // 新的一天重新選行銷
   }
 
   return report;
